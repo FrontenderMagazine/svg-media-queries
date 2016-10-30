@@ -1,4 +1,6 @@
-Одна из хороших штук в SVG, это то, что вы можете использовать media-запросы, чтобы добавить отзывчивости для изображений:
+# SVG и медиа-запросы
+
+Одно из достоинств SVG, это то, что можно использовать медиа-запросы для реализации медиавыражений:
 
     <svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
       <style>
@@ -13,12 +15,11 @@
       </style>
       <circle cx="50" cy="50" r="50"/>
     </svg>
-    
 
-**Но когда кружок должен стать синим?** В спеке говорят, что `min-width` 
-[должен соответствовать ширине вьюпорта][1], но…
+**Но когда именно кружок должен стать синим?** Согласно спецификации `min-width` [должен соответствовать ширине вьюпорта][1], но…
 
-## Какой вьюпорт?
+
+## Какого вьюпорта?
 
     <img src="circle.svg" width="50" height="50">
     <img src="circle.svg" width="100" height="100">
@@ -27,178 +28,106 @@
       …как указано выше…
     </svg>
 
-Что из перечисленного выше нарисует (потенциально обрезанный) *синий* круг в HTML-документе? Как и чей вьюпорт следует использовать? Должно быть:
-
+Что из перечисленного выше нарисует (потенциально обрезанный) *синий* круг в HTML-документе? Как и чей вьюпорт следует использовать? Что нужно брать в расчет:
 
 * Размер родительского документа в CSS
-* `<svg>` aтрибуты ширины, высоты, viewBox 
-* `<img>` атрибуты ширины, высоты 
-* `<img>` атрибуты размеров указанные в CSS  
+* `<svg>` aтрибуты `width`, `height, viewBox 
+* `<img>` атрибуты `width`, `height`
+* размеры `<img>` указанные в CSS  
 
 Вот демо того что расписанно выше: 
 
-http://codepen.io/anon/pen/qaQBQd
+<p data-height="265" data-theme-id="dark" data-slug-hash="pEXrpN" data-default-tab="result" data-user="FMRobot" data-embed-version="2" data-pen-title="pEXrpN" class="codepen"><a href="http://codepen.io/FMRobot/pen/pEXrpN/">Посмотрите на CodePen</a>.</p>
 
-### Большинство браузеров говорят…
+
+### В большинстве браузеров…
 
 Для `<img>`, SVG масштабируется до размеров изображения, а также вьюпорт для SVG в CSS до размеров `<img>`. Таким образом, первый `<img>` имеет ширину вьюпорта 50 пикселей, а второй имеет ширину 100. Это означает, что второй `<img>` подхватывает «синий» медиа-запрос, но первый этого не делает.
 
 Для `<iframe>`, размером вьюпорта SVG является вьюпорт фрейм-документа . Таким образом, в приведенном выше примере, ширина вьюпорта в 50 пикселей CSS, потому что это ширина фрейма.
 
-Что касается встроенного `<svg>`, то SVG не имеет своего собственного значения вьюпорт, он становится частью родительского документа. Это означает, что `<style>` находится в собственности родительского документа - он не ограничен областью видимости в SVG. Это привлекло мое внимание, когда я впервые использовал встроенный SVG, но это имеет смысл и [хорошо определено в спецификации][3].
+Что касается встроенного `<svg>`, то SVG не имеет своего собственного вьюпорта, он становится частью родительского документа. Это означает, что `<style>` находится в собственности родительского документа - он не ограничен областью видимости в SVG. Это привлекло мое внимание, когда я впервые использовал встроенный SVG, но это имеет смысл и [хорошо определено в спецификации][3].
 
-### Что же говорит лиса?
 
-Firefox has other ideas. It behaves as above, except:
+### Как говорит лисичка?
 
-For `<img>`, the viewport is the rendered size in device pixels, meaning
-the viewport changes depending on display density. The first image in the demo 
-will appear green on 1x screens, but blue on 2x screens and above. This is a 
-problem as some laptops and most phones have a pixel density greater than 1.
+У Firefox своя точка зрения. Он ведет себя так, как описано выше, за одним исключением:
 
-This feels like a bug, especially as Firefox doesn't apply the same logic to
-the iframe, but we have to cut Firefox some slack here as the spec doesn't 
-really cover how SVG-in
--`<img>` should be scaled, let alone how media queries should be handled
-.
+Для `<img>`, вьюпорт это отрендеренный размер в пикселях устройства, а это означает изменение отображения в зависимости от плотности пикселей экрана. Первое изображение в демке будет зеленым на 1x экранах, но станет синего цвета на экранах 2x и выше. Это проблема, так как некоторые ноутбуки и большинство телефонов имеют плотность пикселей больше чем 1.
 
-I've [filed an issue with the spec][4], hopefully this can be cleared up.
+Выглядит ошибкой, тем более, что Firefox не применяет ту же логику к `iframe`, но мы должны признать в Firefox некоторую слабину их спецификации, она на самом деле не покрывает случаи когда SVG используется в `<img>` - должны масштабироваться, не говоря уже, о медиа запросах, которые должны обрабатываться.
 
-But things get a lot more complicated when you start…
+Я [создал ишью для спецификации][4], будем надеяться, что это устронят.
 
-## Drawing SVG to a canvas {#drawing-svg-to-a-canvas}
+Но все становится гораздо сложнее, когда вы начинаете…
 
-You can also draw `<img>`s to `<canvas>`es:
+
+## Рисовать SVG на canvas
+
+Можно рисовать `<img>` в `<canvas>`, вот так:
 
     canvas2dContext.drawImage(img, x, y, width, height);
-    
 
-**But when should the circle be blue?** There are a few more viewport choices
-this time. Should it be:
+**Но когда круг должен стать синим?** На этот раз больше вьюпортов. Что из этого играет роль:
 
-*   The CSS size of the host window
-*   The width/height/viewBox attributes on the `<svg>` 
-*   The width/height attributes on the `<img>` 
-*   The CSS layout dimensions of the `<img>` 
-*   The pixel-data dimensions of the `<canvas>` 
-*   The CSS layout dimensions of the `<canvas>` 
-*   The width/height specified in `drawImage` 
-*   The width/height specified in `drawImage`, multiplied by whatever transform
-    the 2d context has
-   
+* Размер родительского окна в CSS
+* Атрибуты `width`, `height` и `viewbox` у `<svg>`
+* Атрибуты `width` и `height` тега `<img>` 
+* Заданные в CSS размеры `<img>` 
+* Плотность пикселей `<canvas>` 
+* Заданные в CSS размеры `<canvas>` 
+* Ширина, высота указаные в `drawImage` 
+* Ширина, высота указаные в `drawImage`, учитывая примененные к двухмерному контексту трансформации
 
-Which would you expect? Again, the spec is unclear, and this time every browser
-has gone in a different direction. Give it a try:
+Как вы думаете? Опять же, спецификация неясна, и на этот раз каждый браузер пошел по своему собственному пути. Давайте ознакомимся:
 
-<legend>SVG size</legend> 
- 50x50
+<p data-height="265" data-theme-id="dark" data-slug-hash="VKJMMY" data-default-tab="result" data-user="FMRobot" data-embed-version="2" data-pen-title="VKJMMY" class="codepen"><a href="http://codepen.io/FMRobot/pen/VKJMMY/">Посмотрите на CodePen</a>.</p>
 
- 100x100
+Насколько я могу судить, вот что браузеры делают:
 
- Use viewBox
 
-<legend> `<img>` size</legend> 
- Unset
+### Chrome
 
- 50x50
+Chrome отталкивается от атрибутов width/height, указанных в SVG документе. Это означает, что если в SVG документе указана `width="50"`, сработает медиа-запрос для вьюпорта шириной 50px. Если вы хотите отобразить его так, что бы сработал медиа-запрос для вьюпорта шириной 100px, незадача. Независимо от того, какой размер вы используйте в `canvas`, он будет рисовать, используя медиа-запрос для 50px ширины.
 
- 100x100
+Однако, если в SVG задан атрибут `viewBox`, а не фиксированная ширина, Chrome использует плотность пикселей `<canvas>` в качестве ширины вьюпорта. Можно утверждать, что это подобно тому, будто все работает с инлайн SVG, где окно вьюпорта это все окно браузера, но переключение поведения, основанного на `viewBox` действительно странно.
 
-<legend> `<img>` CSS size</legend> 
- Unset
+Chrome выигрывает награду странные-штанишки за «шаткое поведение».
 
- 50x50
 
- 100x100
+### Safari
 
- Add to <body>
+Как и Chrome, Safari использует размер, указанный в документе SVG, с теми же недостатками. Но если SVG использует viewBox, а не фиксированую ширину, он вычисляет ширину на основе viewBox, так что SVG с viewBox = "50 50 200 200" будет иметь ширину 150.
 
-<legend> `<canvas>` size</legend> 
- 50x50
+Не так странно как в Chrome, но всё равно ограничивает.
 
- 100x100
 
-<legend> `drawImage` size</legend> 
- 50x50
+### Firefox
 
- 100x100
+Firefox использует ширину и высоту, указанную в вызове `drawImage`, с учетом любых трасформаций. Это означает, что если вы рисуете вашу SVG, так, что размер холста 300 пикселей в ширину, он будет иметь ширину вьюпорта в 300px.
 
-<legend>Context transform</legend> 
- 0.5x
+Это своего рода отражает их странное поведение `<img>` — это основано на  отрисовке пикселей. Это означает, что вы получите те же несоответствия плотности, если умножите ширину вашего холста и высоту `devicePixelRatio` (и масштаб упадет обратно с помощью CSS), вы должны это сделать, что бы избежать размытости на экранах с высокой плотностью:
 
-As far as I can tell, here's what the browsers are doing:
+<p data-height="265" data-theme-id="dark" data-slug-hash="vXqWBg" data-default-tab="result" data-user="FMRobot" data-embed-version="2" data-pen-title="vXqWBg" class="codepen"><a href="http://codepen.io/FMRobot/pen/vXqWBg/">Посмотрите на CodePen</a>.</p>
 
-### Chrome {#chrome}
+Есть смысл в том, что делает Firefox, но это означает, что медиа-запросы привязаны к пикселям.
 
-Chrome goes for the width/height attributes specified in the SVG document. This
-means if the SVG document says`width="50"`, you'll get the media queries for a
-50px wide viewport. If you wanted to draw it using the media queries for a 100px
-wide viewport, tough luck. No matter what size you draw it to the canvas, it'll 
-draw using the media queries for a 50px width.
 
-However, if the SVG specifies a `viewBox` rather than a fixed width, Chrome
-uses the pixel-data width of the`<canvas>` as the viewport width. You
-could argue this is similar to how things work with inline SVG, where the 
-viewport is the whole window, but switching behaviours based on`viewBox` is
-really odd.
+### Microsoft Edge
 
-Chrome wins the bizarro-pants award for "wonkiest behaviour".
+Egde использует размер элемента `<img>` для определения размеров вьюпорта. Если `<img>` не имеет размеров (`display: none` или элемент вне документа), то он возвращается к атрибутам `width` и `height`, если их нет, тогда он использует внутренние размеры `<img>`.
 
-### Safari {#safari}
+Это означает, что вы можете сделать SVG размером 1000x1000, но изображение `<img width= "100">`, вьюпорт будет иметь ширину 100px.
 
-Like Chrome, Safari uses the size specified in the SVG document, with the same
-downsides. But if the SVG uses a`viewBox` rather than a fixed width, it
-calculates the width from the`viewBox`, so an SVG with 
-`viewBox="50 50 200 200"` would have a width of 150.
+На мой взгляд, это идеальный вариант. Это означает, что вы можете активировать медиа-запросы и не зависить от ширина русинка. Это, кроме того, соответствует поведению адаптивных изображений. Когда вы рисуете `<img srcset= "…" width="…">` на холсте, все браузеры соглашаются, что изображение должно содержать ресурс из `<img>`.
 
-So, less bizarre than Chrome, but still really restrictive.
 
-### Firefox {#firefox}
+## Фух!
 
-Firefox uses the width/height specified in the `drawImage` call, multiplied by
-any context transforms. This means if you draw your SVG so it's 300 canvas 
-pixels wide, it'll have a viewport width of 300px.
+Я [создал ишью с предложением принять поведение Edge][6], и [предложил дополнение к `createImageBitmap` которое позволит задать вьюпорт из скрипта][7]. Надеюсь, мы сможем добиться большей кроссбраузерности!
 
-This kinda reflects their weird `<img>` behaviour - it's based on pixels
-drawn. This means you'll get the same density inconsistencies if you multiply 
-your canvas width and height by`devicePixelRatio` (and scale back down with CSS
-), which you should do to avoid blurriness on high-density screens:<figure
-class="full-figure
-">
+Для полноты картины, [вот как я собрал данные][8], а [вот полные результаты][9].
 
-![][5]<canvas width="150" height="60" class="text-canvas"></canvas><canvas
-width="150" height="60" class="text-canvas-sharp
-"></canvas> <figcaption><img>, <canvas>, multiplied <canvas>. Without
-multiplication, the canvas will appear blurry on high-density screens</
-figcaption
-></figure>
-
-There's logic to what Firefox is doing, but it means your media queries are
-tied to pixels drawn.
-
-### Microsoft Edge {#microsoft-edge}
-
-Edge uses the layout size of the `<img>` to determine the viewport. If
-the`<img>` doesn't have layout (`display:none` or not in the document
-tree) then it falls back to the width/height attributes, if it doesn't have 
-those it falls to the intrinsic dimensions of the`<img>`.
-
-This means you can draw the SVG at 1000x1000, but if the image is 
-`<img width="100">`, it'll have a viewport width of 100px.
-
-In my opinion this is ideal. It means you can activate media queries for widths
-independent of the drawn width. It also feels consistent with responsive images.
-When you draw an`<img srcset="…" sizes="…">` to a canvas, all browsers
-agree that the drawn image should be the resource currently selected by the
-`<img>`.
-
-## Phew! {#phew}
-
-I've [filed an issue with the spec to adopt Edge's behaviour][6], and 
-[proposed an addition to `createImageBitmap` so the viewport can be specified in script][7]
-
-For completeness, [here's how I gathered the data][8], and 
-[here are the full results][9].
 
  [1]: https://drafts.csswg.org/mediaqueries-3/#width
  [2]: img/fixed100.4b1cb7cb9384.svg
